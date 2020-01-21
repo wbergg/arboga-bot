@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-type Response struct {
+type Response []struct {
 	SiteID            string `json:"SiteId"`
 	StockTextShort    string `json:"StockTextShort"`
 	StockTextLong     string `json:"StockTextLong"`
@@ -46,7 +46,7 @@ func requestData() {
 
 	json.Unmarshal(body, &s)
 
-	fmt.Println(string(body))
+	//fmt.Println(string(body))
 
-	fmt.Println(s.Shelf)
+	fmt.Println(s[0].StockTextShort)
 }
