@@ -9,19 +9,17 @@ import (
 )
 
 type Response struct {
-	JSON []struct {
-		SiteID            string `json:"SiteId"`
-		StockTextShort    string `json:"StockTextShort"`
-		StockTextLong     string `json:"StockTextLong"`
-		ShowStock         bool   `json:"ShowStock"`
-		SectionLabel      string `json:"SectionLabel"`
-		ShelfLabel        string `json:"ShelfLabel"`
-		Shelf             string `json:"Shelf"`
-		Section           string `json:"Section"`
-		NotYetSaleStarted string `json:"NotYetSaleStarted"`
-		IsAgent           bool   `json:"IsAgent"`
-		TranslateService  bool   `json:"TranslateService"`
-	}
+	SiteID            string `json:"SiteId"`
+	StockTextShort    string `json:"StockTextShort"`
+	StockTextLong     string `json:"StockTextLong"`
+	ShowStock         bool   `json:"ShowStock"`
+	SectionLabel      string `json:"SectionLabel"`
+	ShelfLabel        string `json:"ShelfLabel"`
+	Shelf             string `json:"Shelf"`
+	Section           string `json:"Section"`
+	NotYetSaleStarted string `json:"NotYetSaleStarted"`
+	IsAgent           bool   `json:"IsAgent"`
+	TranslateService  bool   `json:"TranslateService"`
 }
 
 func main() {
@@ -48,5 +46,7 @@ func requestData() {
 
 	json.Unmarshal(body, &s)
 
-	fmt.Println(s.StockTextShort)
+	fmt.Println(string(body))
+
+	fmt.Println(s.Shelf)
 }
