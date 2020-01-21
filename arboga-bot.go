@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -45,16 +46,18 @@ func requestData() {
 	}
 
 	s := Response{}
-	//json := Request{}
+	jsonValue, err := json.Marshal(Request{
+		ProductID: "508393",
+		SiteIds:   []string{"0611"},
+	})
+	if err != nil {
+		fmt.Println("PENIS")
+		panic(err)
+	}
 
-	//jsonValue := []byte(`{"productId":"508393","siteIds":["0611"]}`)
-	jsonValue = json.Marshal(Request{ProductID:"508393",SiteIds:["0611"]})
-	//jsonValue, err := json.Marshal(json)
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	res, err := http.Post("https://www.systembolaget.se/api/product/getstockbalance", "application/json", bytes.NewBuffer(jsonValue))
+	res, err := http.Post("https://www.systembolaget.se/api/product/getstockbalance",
+		"application/json",
+		bytes.NewBuffer(jsonValue))
 	if err != nil {
 		panic(err)
 	}
@@ -76,6 +79,8 @@ func requestData() {
 	message = message + "https://www.entremalmo.se/wp-content/uploads/2017/11/systembolaget.png" + "\n"
 	message = message + "Someone just bought an Arboga 10.2 @ Systembolaget in Gislaved!\n"
 
+	dataUpdate := false
+
 	for _, site := range s {
 
 		val, err := client.Get(site.SiteID).Result()
@@ -90,12 +95,14 @@ func requestData() {
 			if err != nil {
 				panic(err)
 			}
+			message = message + "Currently left in stock: " + site.StockTextShort + "\n"
+			dataUpdate = true
 		}
 
-		message = message + "Currently left in stock: " + s[0].StockTextShort + "\n"
-
 	}
-	// Send message to Telegram
-	//t.SendM(message)
-	fmt.Println(message)
+	if dataUpdate == true {
+		// Send message to Telegram
+		//t.SendM(message)
+		fmt.Println(message)
+	}
 }
