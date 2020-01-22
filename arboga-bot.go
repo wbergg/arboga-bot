@@ -48,7 +48,7 @@ func main() {
 	// Run before starting the timer
 	requestData(tg)
 
-	tmr := time.NewTimer(1 * time.Minute)
+	tmr := time.NewTimer(5 * time.Minute)
 
 	for {
 		select {
