@@ -45,18 +45,17 @@ func main() {
 	tg := tele.New(api_key, channel, false)
 	tg.Init()
 
-	//requestData(tg)
-	tmr := time.NewTimer(5 * time.Minute)
+	// Run before starting the timer
+	requestData(tg)
 
-	go func() {
-		for {
-			select {
-			case <-tmr.C:
-				requestData(tg)
-			}
+	tmr := time.NewTimer(1 * time.Minute)
+
+	for {
+		select {
+		case <-tmr.C:
+			requestData(tg)
 		}
-	}()
-	time.Sleep(2 * time.Second)
+	}
 }
 
 func requestData(t *tele.Tele) {
