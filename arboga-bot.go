@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/go-redis/redis"
 	"github.com/wbergg/bordershop-bot/tele"
@@ -35,13 +36,27 @@ type Response []struct {
 func main() {
 	//Telegram API key
 	api_key := os.Getenv("AB_APIKEY")
+	if api_key == "" {
+		panic("No valid Telegram API Key")
+	}
 	//Telegram channel number
 	channel, _ := strconv.ParseInt(os.Getenv("AB_CHANNEL"), 10, 64)
 
 	tg := tele.New(api_key, channel, false)
 	tg.Init()
 
-	requestData(tg)
+	//requestData(tg)
+	tmr := time.NewTimer(5 * time.Minute)
+
+	go func() {
+		for {
+			select {
+			case <-tmr.C:
+				requestData(tg)
+			}
+		}
+	}()
+	time.Sleep(2 * time.Second)
 }
 
 func requestData(t *tele.Tele) {
