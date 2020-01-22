@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/go-redis/redis"
+	"github.com/wbergg/bordershop-bot/tele"
 )
 
 type Request struct {
@@ -30,10 +33,18 @@ type Response []struct {
 }
 
 func main() {
-	requestData()
+	//Telegram API key
+	api_key := os.Getenv("AB_APIKEY")
+	//Telegram channel number
+	channel, _ := strconv.ParseInt(os.Getenv("AB_CHANNEL"), 10, 64)
+
+	tg := tele.New(api_key, channel, false)
+	tg.Init()
+
+	requestData(tg)
 }
 
-func requestData() {
+func requestData(t *tele.Tele) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
@@ -51,7 +62,6 @@ func requestData() {
 		SiteIds:   []string{"0611"},
 	})
 	if err != nil {
-		fmt.Println("PENIS")
 		panic(err)
 	}
 
@@ -71,13 +81,11 @@ func requestData() {
 
 	json.Unmarshal(body, &s)
 
-	fmt.Println(s[0].StockTextShort)
-
 	//Prepare Telegram message
 	message := ""
 	message = message + "*DEKADENS UPDATE 2000!*\n"
-	message = message + "https://www.entremalmo.se/wp-content/uploads/2017/11/systembolaget.png" + "\n"
-	message = message + "Someone just bought an Arboga 10.2 @ Systembolaget in Gislaved!\n"
+	message = message + "https://static.systembolaget.se/imagelibrary/publishedmedia/45ve1hzsi2adzw1b7m4v/508393.jpg" + "\n\n"
+	message = message + "Someone just bought Arboga 10.2 @ Systembolaget in Gislaved!\n\n"
 
 	dataUpdate := false
 
@@ -89,7 +97,7 @@ func requestData() {
 		}
 
 		if val == site.StockTextShort {
-			fmt.Println("no change")
+			fmt.Println("No stock update, currently at " + site.StockTextShort)
 		} else {
 			err = client.Set(site.SiteID, site.StockTextShort, 0).Err()
 			if err != nil {
@@ -102,7 +110,7 @@ func requestData() {
 	}
 	if dataUpdate == true {
 		// Send message to Telegram
-		//t.SendM(message)
+		t.SendM(message)
 		fmt.Println(message)
 	}
 }
