@@ -48,13 +48,11 @@ func main() {
 	// Run before starting the timer
 	requestData(tg)
 
-	tmr := time.NewTimer(5 * time.Minute)
+	pollInterval := 5
 
-	for {
-		select {
-		case <-tmr.C:
-			requestData(tg)
-		}
+	tmr := time.Tick(time.Duration(pollInterval) * time.Minute)
+	for range tmr {
+		requestData(tg)
 	}
 }
 
