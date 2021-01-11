@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -34,49 +36,58 @@ type Response []struct {
 }
 
 func main() {
+	// Enable bool debug flag
+	debug := flag.Bool("debug", false, "Turns on debug mode and prints to stdout")
+
 	//Telegram API key
-	api_key := os.Getenv("AB_APIKEY")
-	if api_key == "" {
-		panic("No valid Telegram API Key")
+	tgAPIKey := os.Getenv("AB_APIKEY")
+	if tgAPIKey == "" {
+		panic("No valid Telegram API Key specified")
 	}
 	//Telegram channel number
-	channel, _ := strconv.ParseInt(os.Getenv("AB_CHANNEL"), 10, 64)
+	tgChannel, _ := strconv.ParseInt(os.Getenv("AB_CHANNEL"), 10, 64)
+	if tgChannel == 0 {
+		panic("No valid Telegram channel specified")
+	}
 
-	tg := tele.New(api_key, channel, false)
-	tg.Init()
+	tg := tele.New(tgAPIKey, tgChannel, false, *debug)
+	tg.Init(false)
 
 	// Run before starting the timer
 	requestData(tg)
 
+	// Set poll interval to 5 minutes
 	pollInterval := 5
 
 	tmr := time.Tick(time.Duration(pollInterval) * time.Minute)
+	// Loop forever
 	for range tmr {
 		requestData(tg)
 	}
 }
 
 func requestData(t *tele.Tele) {
-	client := redis.NewClient(&redis.Options{
+	var ctx = context.Background()
+
+	// Redis initialization
+	rdb := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})
 
-	_, err := client.Ping().Result()
-	if err != nil {
-		panic(err)
-	}
-
 	s := Response{}
 	jsonValue, err := json.Marshal(Request{
+		// Product ID from Systembolaget
 		ProductID: "508393",
-		SiteIds:   []string{"0611"},
+		// Site (store) ID(s) from Systembolaget
+		SiteIds: []string{"0611"},
 	})
 	if err != nil {
 		panic(err)
 	}
 
+	// Get stock balance
 	res, err := http.Post("https://www.systembolaget.se/api/product/getstockbalance",
 		"application/json",
 		bytes.NewBuffer(jsonValue))
@@ -103,7 +114,7 @@ func requestData(t *tele.Tele) {
 
 	for _, site := range s {
 
-		val, err := client.Get(site.SiteID).Result()
+		val, err := rdb.Get(ctx, site.SiteID).Result()
 		if err != nil {
 			panic(err)
 		}
@@ -111,7 +122,7 @@ func requestData(t *tele.Tele) {
 		if val == site.StockTextShort {
 			fmt.Println("No stock update, currently at " + site.StockTextShort)
 		} else {
-			err = client.Set(site.SiteID, site.StockTextShort, 0).Err()
+			err := rdb.Set(ctx, site.SiteID, site.StockTextShort, 0).Err()
 			if err != nil {
 				panic(err)
 			}
