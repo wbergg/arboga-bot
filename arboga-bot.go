@@ -18,8 +18,8 @@ import (
 )
 
 type Request struct {
-	ProductID string   `json:"productId"`
-	StoreID   []string `json:"storeId"`
+	ProductID string `json:"productId"`
+	StoreID   string `json:"storeId"`
 }
 
 type Response []struct {
@@ -87,7 +87,7 @@ func requestData(t *tele.Tele) {
 		// Product ID from Systembolaget
 		ProductID: "508393",
 		// Site (store) ID(s) from Systembolaget
-		StoreID: []string{"0611"},
+		StoreID: "0611",
 	})
 	if err != nil {
 		panic(err)
@@ -106,7 +106,9 @@ func requestData(t *tele.Tele) {
 		panic(err)
 	}
 
-	fmt.Println(res)
+	s2 := Request{}
+	json.Unmarshal(jsonValue, &s2)
+	fmt.Println(s2)
 
 	// Get stock balance
 	//res, err := http.Post("https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance",
