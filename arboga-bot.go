@@ -23,17 +23,10 @@ type Request struct {
 }
 
 type Response []struct {
-	SiteID            string `json:"SiteId"`
-	StockTextShort    string `json:"StockTextShort"`
-	StockTextLong     string `json:"StockTextLong"`
-	ShowStock         bool   `json:"ShowStock"`
-	SectionLabel      string `json:"SectionLabel"`
-	ShelfLabel        string `json:"ShelfLabel"`
-	Shelf             string `json:"Shelf"`
-	Section           string `json:"Section"`
-	NotYetSaleStarted string `json:"NotYetSaleStarted"`
-	IsAgent           bool   `json:"IsAgent"`
-	TranslateService  bool   `json:"TranslateService"`
+	ProductID string `json:"productId"`
+	StoreID   string `json:"storeId"`
+	Shelf     string `json:"shelf"`
+	Stock     int    `json:"stock"`
 }
 
 func main() {
@@ -106,9 +99,7 @@ func requestData(t *tele.Tele) {
 		panic(err)
 	}
 
-	s2 := Request{}
-	json.Unmarshal(jsonValue, &s2)
-	fmt.Println(s2)
+	fmt.Println(req)
 
 	// Get stock balance
 	//res, err := http.Post("https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance",
@@ -134,19 +125,19 @@ func requestData(t *tele.Tele) {
 
 	for _, site := range s {
 
-		val, err := rdb.Get(ctx, site.SiteID).Result()
+		val, err := rdb.Get(ctx, site.StoreID).Result()
 		if err != nil {
 			panic(err)
 		}
 
-		if val == site.StockTextShort {
-			fmt.Println("No stock update, currently at " + site.StockTextShort)
+		if val == strconv.Itoa(site.Stock) {
+			fmt.Println("No stock update, currently at " + strconv.Itoa(site.Stock))
 		} else {
-			err := rdb.Set(ctx, site.SiteID, site.StockTextShort, 0).Err()
+			err := rdb.Set(ctx, site.StoreID, site.Stock, 0).Err()
 			if err != nil {
 				panic(err)
 			}
-			message = message + "Currently left in stock: " + site.StockTextShort + "\n"
+			message = message + "Currently left in stock: " + strconv.Itoa(site.Stock) + "\n"
 			dataUpdate = true
 		}
 
