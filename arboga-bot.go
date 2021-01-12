@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
@@ -9,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -76,35 +76,32 @@ func requestData(t *tele.Tele) {
 	})
 
 	s := Response{}
-	jsonValue, err := json.Marshal(Request{
-		// Product ID from Systembolaget
-		ProductID: "508393",
-		// Site (store) ID(s) from Systembolaget
-		StoreID: "0611",
-	})
+
+	u, err := url.Parse("https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance/store")
 	if err != nil {
 		panic(err)
 	}
 
-	req, err := http.NewRequest("GET", "https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance/store", bytes.NewBuffer(jsonValue))
+	q := u.Query()
+	q.Set("ProductID", "508393")
+	q.Set("StoreID", "0611")
+	u.RawQuery = q.Encode()
+	fmt.Println(u)
+
+	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
 		log.Fatal(err)
 	}
 	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "PostmanRuntime/7.26.8")
+	req.Header.Add("Origin", "https://www.systembolaget.se")
+	req.Header.Add("Authority", "api-extern.systembolaget.se")
+	req.Header.Add("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36")
 	req.Header.Add("Ocp-Apim-Subscription-Key", sbAPIKey)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)
 	}
-
-	fmt.Println(req)
-
-	// Get stock balance
-	//res, err := http.Post("https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance",
-	//	"application/json",
-	//	bytes.NewBuffer(jsonValue))
 
 	defer res.Body.Close()
 
@@ -114,6 +111,8 @@ func requestData(t *tele.Tele) {
 	}
 
 	json.Unmarshal(body, &s)
+
+	fmt.Println(s)
 
 	//Prepare Telegram message
 	message := ""
