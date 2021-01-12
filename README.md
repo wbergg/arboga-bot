@@ -8,8 +8,10 @@ The following environmental variables need to be set in order to use the program
 
 Telegram API key and channel:
 ```
-AB_APIKEY="key"
-AB_CHANNEL="channel"
+AB_TGAPIKEY="key"
+AB_TGCHANNEL="channel"
+
+AB_SBAPIKEY="key"
 ```
 
 ## Running

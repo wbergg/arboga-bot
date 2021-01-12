@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -18,7 +19,7 @@ import (
 
 type Request struct {
 	ProductID string   `json:"productId"`
-	SiteIds   []string `json:"siteIds"`
+	StoreID   []string `json:"storeId"`
 }
 
 type Response []struct {
@@ -40,12 +41,12 @@ func main() {
 	debug := flag.Bool("debug", false, "Turns on debug mode and prints to stdout")
 
 	//Telegram API key
-	tgAPIKey := os.Getenv("AB_APIKEY")
+	tgAPIKey := os.Getenv("AB_TGAPIKEY")
 	if tgAPIKey == "" {
 		panic("No valid Telegram API Key specified")
 	}
 	//Telegram channel number
-	tgChannel, _ := strconv.ParseInt(os.Getenv("AB_CHANNEL"), 10, 64)
+	tgChannel, _ := strconv.ParseInt(os.Getenv("AB_TGCHANNEL"), 10, 64)
 	if tgChannel == 0 {
 		panic("No valid Telegram channel specified")
 	}
@@ -67,6 +68,11 @@ func main() {
 }
 
 func requestData(t *tele.Tele) {
+	sbAPIKey := os.Getenv("AB_SBAPIKEY")
+	if sbAPIKey == "" {
+		panic("No valid Systembolaget API Key specified")
+	}
+
 	var ctx = context.Background()
 
 	// Redis initialization
@@ -81,19 +87,31 @@ func requestData(t *tele.Tele) {
 		// Product ID from Systembolaget
 		ProductID: "508393",
 		// Site (store) ID(s) from Systembolaget
-		SiteIds: []string{"0611"},
+		StoreID: []string{"0611"},
 	})
 	if err != nil {
 		panic(err)
 	}
 
-	// Get stock balance
-	res, err := http.Post("https://www.systembolaget.se/api/product/getstockbalance",
-		"application/json",
-		bytes.NewBuffer(jsonValue))
+	req, err := http.NewRequest("GET", "https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance/store", bytes.NewBuffer(jsonValue))
+	if err != nil {
+		log.Fatal(err)
+	}
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("User-Agent", "PostmanRuntime/7.26.8")
+	req.Header.Add("Ocp-Apim-Subscription-Key", sbAPIKey)
+
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		panic(err)
 	}
+
+	fmt.Println(res)
+
+	// Get stock balance
+	//res, err := http.Post("https://api-extern.systembolaget.se/sb-api-ecommerce/v1/stockbalance",
+	//	"application/json",
+	//	bytes.NewBuffer(jsonValue))
 
 	defer res.Body.Close()
 
@@ -133,7 +151,7 @@ func requestData(t *tele.Tele) {
 	}
 	if dataUpdate == true {
 		// Send message to Telegram
-		t.SendM(message)
+		//t.SendM(message)
 		fmt.Println(message)
 	}
 }
