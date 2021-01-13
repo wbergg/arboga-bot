@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -18,8 +17,8 @@ import (
 )
 
 type Request struct {
-	ProductID string `json:"productId"`
-	StoreID   string `json:"storeId"`
+	ProductID string   `json:"productId"`
+	StoreID   []string `json:"storeId"`
 }
 
 type Response []struct {
@@ -82,11 +81,13 @@ func requestData(t *tele.Tele) {
 		panic(err)
 	}
 
+	// Create query
 	q := u.Query()
+	// Set systembolaget product id
 	q.Set("ProductID", "508393")
+	// Set systembolaget store id
 	q.Set("StoreID", "0611")
 	u.RawQuery = q.Encode()
-	fmt.Println(u)
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
@@ -112,8 +113,6 @@ func requestData(t *tele.Tele) {
 
 	json.Unmarshal(body, &s)
 
-	fmt.Println(s)
-
 	//Prepare Telegram message
 	message := ""
 	message = message + "*DEKADENS UPDATE 2000!*\n"
@@ -122,15 +121,25 @@ func requestData(t *tele.Tele) {
 
 	dataUpdate := false
 
+	// Future use, support for multiple sites
 	for _, site := range s {
 
+		// Get item from redis
 		val, err := rdb.Get(ctx, site.StoreID).Result()
 		if err != nil {
-			panic(err)
+			// If does not exist, create
+			err := rdb.Set(ctx, site.StoreID, site.Stock, 0).Err()
+			// If create dosent work, panic
+			if err != nil {
+				panic(err)
+			}
 		}
 
+		// Check if stock is unchanged
 		if val == strconv.Itoa(site.Stock) {
-			fmt.Println("No stock update, currently at " + strconv.Itoa(site.Stock))
+			// Debug, fix later
+			//fmt.Println("No stock update, currently at " + strconv.Itoa(site.Stock))
+			// else update stock and prepare message
 		} else {
 			err := rdb.Set(ctx, site.StoreID, site.Stock, 0).Err()
 			if err != nil {
@@ -143,7 +152,8 @@ func requestData(t *tele.Tele) {
 	}
 	if dataUpdate == true {
 		// Send message to Telegram
-		//t.SendM(message)
-		fmt.Println(message)
+		t.SendM(message)
+		// Debug, fix later
+		//fmt.Println(message)
 	}
 }
